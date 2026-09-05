@@ -1,13 +1,13 @@
 # .github/workflows/cicd.yml
 name: CICD
-on: [push] # 每次 push 都会触发
-
-permissions:
-  contents: write # 部署到 gh-pages 分支需要写权限
+on:
+  push:
+    branches: ["main"]
 
 jobs:
-  check-and-deploy:
-    runs-on: ubuntu-latest
+  build-and-deploy:
+    name: Build and Deploy (self-hosted)
+    runs-on: self-hosted # 关键：跑在你本机的自托管 runner 上
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -18,28 +18,21 @@ jobs:
           node-version: 20
 
       # CI：安装依赖 + Prettier 规范检查
-      - name: Install and Run Check Script
-        run: |
-          npm ci
-          npx prettier --check ./source
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint check (Prettier)
+        run: npx prettier --check ./source
 
       # 构建：生成静态文件到 public/
-      - name: Build
+      - name: Build site
         run: npm run build
 
-      # CD：把 public/ 部署到 gh-pages 分支
-      # - name: Deploy
-      #   uses: JamesIves/github-pages-deploy-action@v4
-      #   with:
-      #     folder: public
-  deploy:
-      name: Deploy to local Server
-      runs-on: self-hosted          # 关键：使用自托管 Runner
-      needs: check-and-deploy
-      steps:
-        - name: Pull and run container
-          run: |
-            docker pull flask-ci-demo:latest
-            docker stop flask-app || true
-            docker rm flask-app || true
-            docker run -d --name flask-app -p 5000:5000 flask-ci-demo:latest
+      # CD：用 nginx 容器托管博客。每次部署都重建容器，等于更新到最新
+      - name: Deploy to local nginx
+        shell: bash
+        run: |
+          docker rm -f hexo-blog 2>/dev/null || true
+          docker run -d --name hexo-blog -p 8080:80 nginx:alpine
+          docker cp public/. hexo-blog:/usr/share/nginx/html
+          echo "✅ 部署完成，访问 http://localhost:8080"
