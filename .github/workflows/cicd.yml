@@ -28,7 +28,18 @@ jobs:
         run: npm run build
 
       # CD：把 public/ 部署到 gh-pages 分支
-      - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          folder: public
+      # - name: Deploy
+      #   uses: JamesIves/github-pages-deploy-action@v4
+      #   with:
+      #     folder: public
+deploy:
+    name: Deploy to local Server
+    runs-on: self-hosted          # 关键：使用自托管 Runner
+    needs: build-and-push
+    steps:
+      - name: Pull and run container
+        run: |
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/flask-ci-demo:latest
+          docker stop flask-app || true
+          docker rm flask-app || true
+          docker run -d --name flask-app -p 5000:5000 ${{ secrets.DOCKERHUB_USERNAME }}/flask-ci-demo:latest
