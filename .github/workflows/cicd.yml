@@ -35,7 +35,7 @@ jobs:
   deploy:
       name: Deploy to local Server
       runs-on: self-hosted          # 关键：使用自托管 Runner
-      needs: build-and-push
+      needs: check-and-deploy
       steps:
         - name: Pull and run container
           run: |
