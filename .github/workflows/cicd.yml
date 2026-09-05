@@ -1,0 +1,34 @@
+# .github/workflows/cicd.yml
+name: CICD
+on: [push] # 每次 push 都会触发
+
+permissions:
+  contents: write # 部署到 gh-pages 分支需要写权限
+
+jobs:
+  check-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # CI：安装依赖 + Prettier 规范检查
+      - name: Install and Run Check Script
+        run: |
+          npm ci
+          npx prettier --check ./source
+
+      # 构建：生成静态文件到 public/
+      - name: Build
+        run: npm run build
+
+      # CD：把 public/ 部署到 gh-pages 分支
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: public
