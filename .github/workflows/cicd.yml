@@ -1,19 +1,19 @@
 # .github/workflows/cicd.yml
-name: CICD
-on:
+name: CICD  # 工作流名称，显示在 GitHub Actions 页面
+on:  # 触发条件
   push:
-    branches: ["main"]
+    branches: ["main"]  # 仅当代码推送到 main 分支时触发（PR、其它分支都不跑）
 
 jobs:
-  build-and-deploy:
+  build-and-deploy:  # 任务 ID（内部标识，用于依赖/引用
     name: Build and Deploy (self-hosted)
-    runs-on: self-hosted # 关键：跑在你本机的自托管 runner 上
+    runs-on: self-hosted # 关键：在你本机的自托管 runner 上运行下面的命令（不用 GitHub 云端机器）
     steps:
       - name: Checkout Source Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4  # 把仓库代码拉到 runner 的工作目录
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v4  # 安装并切换到 Node 20，保证环境一致
         with:
           node-version: 20
 
@@ -29,10 +29,14 @@ jobs:
         run: npm run build
 
       # CD：用 nginx 容器托管博客。每次部署都重建容器，等于更新到最新
+      # 注意：以下两步都不指定 shell，由 runner 按平台选默认值
+      # （Linux 用 bash，Windows 用 pwsh），命令语法在两者下一致
+      - name: Remove old container
+        continue-on-error: true # 首次部署容器不存在，docker rm 会返回非 0，这里放行
+        run: docker rm -f hexo-blog
+
       - name: Deploy to local nginx
-        shell: bash
         run: |
-          docker rm -f hexo-blog 2>/dev/null || true
           docker run -d --name hexo-blog -p 8080:80 nginx:alpine
           docker cp public/. hexo-blog:/usr/share/nginx/html
-          echo "✅ 部署完成，访问 http://localhost:8080"
+          echo "部署完成，访问 http://localhost:8080"
