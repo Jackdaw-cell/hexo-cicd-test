@@ -6,10 +6,11 @@ type AnymatchTester = {
   (testString: string | any[]): boolean;
 };
 
-type PicomatchOptions = { dot: boolean };
+      type PicomatchOptions = { dot: boolean };
 
-            declare const anymatch: {(matchers: AnymatchMatcher): AnymatchTester;
-              (
+        declare const anymatch: {
+          (matchers: AnymatchMatcher): AnymatchTester;
+          (
     matchers: AnymatchMatcher,
     testString: null,
     returnIndex: true | PicomatchOptions,
